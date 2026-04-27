@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Restaurant Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-dark bg-dark px-4">
+        <span class="navbar-brand mb-0 h1">{{ restaurant.restaurant_name }} Dashboard</span>
+        <a href="/" class="btn btn-outline-light btn-sm">Logout</a>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <!-- Add Item Form -->
+            <div class="col-md-4">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">Add New Dish</div>
+                    <div class="card-body">
+                        <form action="/add_item" method="POST">
+                            <input type="hidden" name="restaurant_id" value="{{ restaurant.id }}">
+                            <div class="mb-2">
+                                <label class="form-label small">Dish Name</label>
+                                <input type="text" name="dish_name" class="form-control" required>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">Price ($)</label>
+                                <input type="number" step="0.01" name="price" class="form-control" required>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label small">Description</label>
+                                <textarea name="description" class="form-control" rows="2"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100 mt-2">Add to Menu</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Menu List -->
+            <div class="col-md-8">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white font-weight-bold">Current Menu</div>
+                    <div class="card-body">
+                        <table class="table align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Dish</th>
+                                    <th>Description</th>
+                                    <th>Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                <tr>
+                                    <td><strong>{{ item.dish_name }}</strong></td>
+                                    <td class="text-muted small">{{ item.description }}</td>
+                                    <td>${{ "%.2f"|format(item.price) }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
