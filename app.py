@@ -1,15 +1,22 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
-from model import db, User, Restaurant, MenuItem, CartItem
-from werkzeug.security import generate_password_hash, check_password_hash
 import os
 
+# Create the Flask app instance first
 app = Flask(__name__)
 app.secret_key = 'upskill_internship_secret_key'
+
+# Import db and models after app is defined to avoid circular imports
+# Ensure your file is named model.py
+try:
+    from model import db, User, Restaurant, MenuItem, CartItem
+except ImportError:
+    # Fallback if the file is named models.py
+    from models import db, User, Restaurant, MenuItem, CartItem
 
 # Vercel-friendly Database Configuration
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-# On Vercel, we MUST use /tmp for SQLite because it's the only writable directory
+# On Vercel, we MUST use /tmp for SQLite
 if os.environ.get('VERCEL'):
     db_path = '/tmp/food_delivery.db'
 else:
@@ -20,14 +27,15 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
 
-# Important for Vercel: Create tables on the first request if they don't exist
+# Initialize database tables
 @app.before_request
 def create_tables():
-    # This ensures the database is initialized in the /tmp folder on the cloud
     if not os.path.exists(db_path) or os.environ.get('VERCEL'):
-        db.create_all()
+        with app.app_context():
+            db.create_all()
 
-# --- AUTH & NAVIGATION ---
+# --- ROUTES ---
+
 @app.route('/')
 def index():
     if 'user_id' in session:
@@ -81,7 +89,6 @@ def login():
     flash("Invalid credentials", "danger")
     return redirect(url_for('login_page'))
 
-# --- RESTAURANT DASHBOARD ---
 @app.route('/dashboard')
 def dashboard():
     if 'user_id' not in session or session.get('role') != 'restaurant':
@@ -110,7 +117,6 @@ def add_item():
     flash("Item added to menu!", "success")
     return redirect(url_for('dashboard'))
 
-# --- CUSTOMER FEATURES ---
 @app.route('/explore')
 def explore():
     if 'user_id' not in session:
@@ -150,9 +156,6 @@ def view_cart():
     cart_data = db.session.query(CartItem, MenuItem).join(MenuItem).filter(CartItem.user_id == user_id).all()
     total = sum(item.price * cart.quantity for cart, item in cart_data)
     return render_template('cart.html', cart_data=cart_data, total=total)
-
-# This is essential for Vercel to recognize the app
-app = app
 
 if __name__ == '__main__':
     app.run(debug=True)
