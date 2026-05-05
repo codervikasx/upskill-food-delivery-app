@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ restaurant.restaurant_name }} - Menu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <a href="/explore" class="btn btn-link"><- Back to Restaurants</a>
+        <h2 class="mt-3">{{ restaurant.restaurant_name }}</h2>
+        <hr>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}{% for c, m in messages %}<div class="alert alert-{{c}}">{{m}}</div>{% endfor %}{% endif %}
+        {% endwith %}
+        <div class="row">
+            {% for item in items %}
+            <div class="col-md-6 mb-3">
+                <div class="card">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="mb-0">{{ item.dish_name }}</h5>
+                            <small class="text-muted">{{ item.description }}</small>
+                            <p class="mb-0"><strong>${{ "%.2f"|format(item.price) }}</strong></p>
+                        </div>
+                        <form action="/add_to_cart/{{ item.id }}" method="POST">
+                            <button type="submit" class="btn btn-success btn-sm">Add to Cart</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>
