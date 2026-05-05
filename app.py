@@ -7,20 +7,25 @@ app = Flask(__name__)
 app.secret_key = 'upskill_internship_secret_key'
 
 # Vercel-friendly Database Configuration
-# We use /tmp for SQLite because Vercel only allows writing to the /tmp folder
 basedir = os.path.abspath(os.path.dirname(__file__))
-if os.environ.get('VERCEL'):
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:////tmp/food_delivery.db'
-else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'food_delivery.db')
 
+# On Vercel, we MUST use /tmp for SQLite because it's the only writable directory
+if os.environ.get('VERCEL'):
+    db_path = '/tmp/food_delivery.db'
+else:
+    db_path = os.path.join(basedir, 'food_delivery.db')
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
 
-# Vercel needs the 'app' variable to be available as 'app'
-# We also call this 'exposed' for the server
-app = app 
+# Important for Vercel: Create tables on the first request if they don't exist
+@app.before_request
+def create_tables():
+    # This ensures the database is initialized in the /tmp folder on the cloud
+    if not os.path.exists(db_path) or os.environ.get('VERCEL'):
+        db.create_all()
 
 # --- AUTH & NAVIGATION ---
 @app.route('/')
@@ -47,9 +52,15 @@ def register():
     email = request.form.get('email')
     password = request.form.get('password')
     role = request.form.get('role')
+    
+    if not email or not password:
+        flash("Email and Password are required", "danger")
+        return redirect(url_for('index'))
+
     if User.query.filter_by(email=email).first():
         flash("Email already registered!", "danger")
         return redirect(url_for('index'))
+        
     hashed_pw = generate_password_hash(password, method='pbkdf2:sha256')
     new_user = User(name=name, email=email, password_hash=hashed_pw, role=role)
     db.session.add(new_user)
@@ -140,7 +151,8 @@ def view_cart():
     total = sum(item.price * cart.quantity for cart, item in cart_data)
     return render_template('cart.html', cart_data=cart_data, total=total)
 
+# This is essential for Vercel to recognize the app
+app = app
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
