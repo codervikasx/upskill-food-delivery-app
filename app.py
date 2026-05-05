@@ -1,22 +1,16 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, session
+from werkzeug.security import generate_password_hash, check_password_hash
 import os
 
-# Create the Flask app instance first
+# 1. Import the db and models from models.py
+from models import db, User, Restaurant, MenuItem, CartItem
+
 app = Flask(__name__)
 app.secret_key = 'upskill_internship_secret_key'
 
-# Import db and models after app is defined to avoid circular imports
-# Ensure your file is named model.py
-try:
-    from model import db, User, Restaurant, MenuItem, CartItem
-except ImportError:
-    # Fallback if the file is named models.py
-    from models import db, User, Restaurant, MenuItem, CartItem
-
-# Vercel-friendly Database Configuration
+# 2. Database Configuration
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-# On Vercel, we MUST use /tmp for SQLite
 if os.environ.get('VERCEL'):
     db_path = '/tmp/food_delivery.db'
 else:
@@ -25,14 +19,12 @@ else:
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + db_path
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# 3. Connect the db to this app
 db.init_app(app)
 
-# Initialize database tables
-@app.before_request
-def create_tables():
-    if not os.path.exists(db_path) or os.environ.get('VERCEL'):
-        with app.app_context():
-            db.create_all()
+# 4. Create tables (Vercel-safe)
+with app.app_context():
+    db.create_all()
 
 # --- ROUTES ---
 
