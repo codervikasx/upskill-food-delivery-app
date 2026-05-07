@@ -2,8 +2,8 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, f
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 
-# 1. Import the db and models from models.py
-from models import db, User, Restaurant, MenuItem, CartItem
+# 1. Import the db and model from models.py
+from model import db, User, Restaurant, MenuItem, CartItem
 
 app = Flask(__name__)
 app.secret_key = 'upskill_internship_secret_key'
