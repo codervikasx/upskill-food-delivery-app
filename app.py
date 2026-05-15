@@ -204,3 +204,41 @@ def track_orders():
     # Get all orders for this customer
     orders = Order.query.filter_by(customer_id=user_id).order_by(Order.id.desc()).all()
     return render_template('track_orders.html', orders=orders)
+
+# ... (Add these routes to your existing app.py) ...
+
+@app.route('/driver_dashboard')
+def driver_dashboard():
+    if 'user_id' not in session or session.get('role') != 'driver':
+        return redirect(url_for('login_page'))
+    
+    # Show orders that are 'Preparing' (ready to be picked up) 
+    # or already assigned to this driver
+    available_orders = Order.query.filter_by(status='Preparing').all()
+    my_orders = Order.query.filter_by(driver_id=session.get('user_id')).all()
+    
+    return render_template('driver_dashboard.html', available=available_orders, mine=my_orders)
+
+@app.route('/accept_order/<int:order_id>', methods=['POST'])
+def accept_order(order_id):
+    if 'user_id' not in session or session.get('role') != 'driver':
+        return redirect(url_for('login_page'))
+    
+    order = Order.query.get_or_404(order_id)
+    order.driver_id = session.get('user_id')
+    order.status = 'Out for Delivery'
+    order.eta = '15 mins' # Simulated update
+    db.session.commit()
+    
+    flash("Order accepted! Time to deliver.", "success")
+    return redirect(url_for('driver_dashboard'))
+
+@app.route('/complete_order/<int:order_id>', methods=['POST'])
+def complete_order(order_id):
+    order = Order.query.get_or_404(order_id)
+    order.status = 'Delivered'
+    order.eta = 'Arrived'
+    db.session.commit()
+    
+    flash("Great job! Order delivered.", "success")
+    return redirect(url_for('driver_dashboard'))
